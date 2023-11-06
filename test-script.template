@@ -1,0 +1,13 @@
+Start of file.
+
+<%var1>a variable</%var1>
+
+<%var2><%var2>nested for some reason</%var2>{{var2}} {{var1}} {{var2}}</%var2>
+
+{{var1}}
+
+String in between.
+
+{{var2}}
+
+End of file.
