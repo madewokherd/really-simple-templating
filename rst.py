@@ -12,32 +12,44 @@ def _find_first(haystack, needles, start=0):
     return result_str, result
 
 class StringLocation(str):
-    __slots__ = ['line', 'column', 'filename', 'file_contents']
+    __slots__ = ['start_index', '_line', '_column', 'filename', 'file_contents']
 
-    def __new__(cls, s, filename, line=1, column=1, file_contents=None):
+    def __new__(cls, s, filename, start_index=0, file_contents=None):
         self = str.__new__(cls, s)
         self.filename = filename
-        self.line = line
-        self.column = column
+        self.start_index = start_index
+        self._line = None
+        self._column = None
         if file_contents is None:
             self.file_contents = s
         else:
             self.file_contents = file_contents
         return self
 
+    def _calc_linecol(self):
+        if self._line is None:
+            prefix = self.file_contents[0:self.start_index]
+            lines = prefix.count('\n')
+            self._line = 1 + lines
+            self._column = len(prefix.rsplit('\n', 1)[-1])+1
+
+    def _get_line(self):
+        self._calc_linecol()
+        return self._line
+
+    def _get_column(self):
+        self._calc_linecol()
+        return self._column
+
+    line = property(_get_line)
+    column = property(_get_column)
+
     def __getitem__(self, index):
         s = super().__getitem__(index)
         if isinstance(index, slice):
             index = index.start
-        prefix = super().__getitem__(slice(0, index))
-        lines = prefix.count('\n')
-        if lines:
-            line = self.line + lines
-            col = len(prefix.rsplit('\n', 1)[1])+1
-        else:
-            line = self.line
-            col = self.column + len(prefix)
-        return StringLocation(s, self.filename, line, col, self.file_contents)
+
+        return StringLocation(s, self.filename, self.start_index + index, self.file_contents)
 
 class TemplatingState:
     outfile = None
